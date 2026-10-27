@@ -57,6 +57,84 @@ const builtins = {
     if (!data.goal && !data.path) issues.push({ severity: 'high', where: '$.input', msg: '缺少目标描述与项目路径，后续链路无法定向' });
     return { data, issues, signals: issues.length ? ['intake.invalid'] : ['intake.ready'] };
   },
+  projectScan: (args, ctx) => {
+    // 通用、安全、有界的真实磁盘扫描：盘点项目结构 / README / 待办与阻塞标记。
+    // 设计纪律：不抛异常。目录缺失或权限受限时返回 available:false 与已采集到的部分信息。
+    const resolvePath = (p) => {
+      if (!p || typeof p !== 'string') return '';
+      if (p.startsWith('$.')) { try { return String(ctx.bb.get(p) || ''); } catch (e) { return ''; } }
+      return p;
+    };
+    let rawPath = resolvePath(args && args.path) || ctx.bb.get('$.intake.path') || '';
+    if (!rawPath) rawPath = process.cwd();
+    const root = path.resolve(String(rawPath).trim());
+    const maxDepth = Math.max(1, Math.min(6, Number((args && args.maxDepth) || 3)));
+    const IGNORE_DIRS = new Set(['.git', 'node_modules', 'dist', 'build', 'out', '.next', 'target', 'bin', 'obj', '__pycache__', '.idea', '.vscode', 'coverage', '.runtime']);
+    const COUNT_EXT = new Set(['.js', '.ts', '.jsx', '.tsx', '.vue', '.java', '.py', '.go', '.rs', '.c', '.cpp', '.cs', '.rb', '.php', '.md', '.json', '.yml', '.yaml', '.html', '.css', '.sql']);
+    const markerRe = /(TODO|FIXME|BLOCKER|HACK|XXX)\b/gi;
+    const result = {
+      root,
+      available: false,
+      modules: [],
+      fileCount: 0,
+      dirCount: 0,
+      codeFiles: 0,
+      readme: null,
+      markers: { TODO: 0, FIXME: 0, BLOCKER: 0, HACK: 0, XXX: 0 },
+      topLevel: [],
+      scannedAt: new Date().toISOString(),
+      errors: [],
+    };
+    try {
+      if (!fs.existsSync(root)) { result.errors.push('路径不存在: ' + root); return finalize(result, ctx); }
+      const st = fs.statSync(root);
+      if (!st.isDirectory()) { result.errors.push('不是目录: ' + root); return finalize(result, ctx); }
+      result.available = true;
+      const walk = (dir, depth) => {
+        let entries;
+        try { entries = fs.readdirSync(dir, { withFileTypes: true }); }
+        catch (e) { result.errors.push('读取受限: ' + dir + ' (' + (e.code || e.message) + ')'); return; }
+        for (const ent of entries) {
+          const full = path.join(dir, ent.name);
+          if (ent.isDirectory()) {
+            if (depth >= maxDepth || IGNORE_DIRS.has(ent.name)) continue;
+            result.dirCount++;
+            result.modules.push({ name: ent.name, depth });
+            walk(full, depth + 1);
+          } else if (ent.isFile()) {
+            result.fileCount++;
+            const ext = path.extname(ent.name).toLowerCase();
+            if (COUNT_EXT.has(ext)) result.codeFiles++;
+            if (/^readme(\.[a-z]+)?$/i.test(ent.name)) result.readme = path.relative(root, full);
+            if (depth <= 2 && COUNT_EXT.has(ext)) {
+              try {
+                const buf = fs.readFileSync(full, 'utf8');
+                let m;
+                markerRe.lastIndex = 0;
+                while ((m = markerRe.exec(buf)) !== null) {
+                  const key = m[0].toUpperCase();
+                  if (result.markers[key] != null) result.markers[key]++;
+                }
+              } catch (e) { /* 编码/权限问题忽略 */ }
+            }
+          }
+        }
+      };
+      walk(root, 0);
+      result.topLevel = fs.readdirSync(root).slice(0, 50);
+    } catch (e) {
+      result.errors.push('扫描异常: ' + e.message);
+    }
+    return finalize(result, ctx);
+
+    function finalize(r, c) {
+      const summary = r.available
+        ? `项目 ${r.root} 共 ${r.dirCount} 目录 / ${r.fileCount} 文件（含 ${r.codeFiles} 个源码/文档）；README: ${r.readme || '无'}；标记 TODO ${r.markers.TODO} / FIXME ${r.markers.FIXME} / BLOCKER ${r.markers.BLOCKER} / HACK ${r.markers.HACK}。`
+        : `项目路径不可用（${r.errors.join('; ')}）。`;
+      if (c && c.tracer && c.tracer.info) c.tracer.info('projectScan.done', summary, { node: 'projectScan' });
+      return { data: r, issues: r.errors.length ? [{ severity: 'low', where: 'projectScan', msg: r.errors.join('; ') }] : [], signals: ['project.scan.done'] };
+    }
+  },
   set: (args) => ({ data: args.values || args, signals: ['set.done'] }),
   merge: (args) => {
     const list = Array.isArray(args.sources) ? args.sources : [];

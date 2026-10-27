@@ -46,10 +46,23 @@ function synthFromSchema(schema, seed) {
       for (let i = 0; i < n; i++) arr.push(synthFromSchema(itemSchema, hash(`${seed}:${i}`)));
       return arr;
     }
-    case 'integer':
+    case 'integer': {
+      const lo = schema.minimum ?? 0;
+      const hi = schema.maximum ?? 99;
+      // 同时有上下界时，偏向「通过区」（取 80% 处），保证依赖分数阈值的评审/闸门在 mock 下收敛
+      if (schema.maximum !== undefined && schema.minimum !== undefined) return Math.round(lo + (hi - lo) * 0.8);
+      if (schema.maximum !== undefined) return Math.max(lo, Math.min(hi, lo + (seed % 10)));
+      if (schema.minimum !== undefined) return lo + (seed % 10);
       return (seed % 100);
-    case 'number':
+    }
+    case 'number': {
+      const lo = schema.minimum ?? 0;
+      const hi = schema.maximum ?? 100;
+      if (schema.maximum !== undefined && schema.minimum !== undefined) return +((lo + (hi - lo) * 0.8).toFixed(2));
+      if (schema.maximum !== undefined) return +(Math.max(lo, Math.min(hi, lo + ((seed % 100) / 100)))).toFixed(2);
+      if (schema.minimum !== undefined) return +((lo + ((seed % 100) / 100))).toFixed(2);
       return +((seed % 100) + 0.5).toFixed(2);
+    }
     case 'boolean':
       return (seed % 2) === 0;
     case 'string':

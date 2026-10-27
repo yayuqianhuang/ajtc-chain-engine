@@ -71,7 +71,11 @@ function readInput(flags) {
     const p = path.isAbsolute(flags.input) ? flags.input : path.resolve(process.cwd(), flags.input);
     return JSON.parse(fs.readFileSync(p, 'utf8'));
   }
-  if (flags.goal) return { goal: flags.goal };
+  if (flags.goal) {
+    // --path / --projectPath 透传到 intake，供 project.scan 等依赖项目路径的链使用
+    const projPath = flags.path || flags.projectPath;
+    return projPath ? { goal: flags.goal, path: projPath, projectPath: projPath } : { goal: flags.goal };
+  }
   return null;
 }
 

@@ -1,9 +1,10 @@
 // smoke.mjs — ajtc-chain-engine CI smoke test (mock-only, zero external deps)
 //
 // 设计目标（对齐 Engineering Assurance Team Go/No-Go 报告 Tessa 的放行条件）：
-//   1. 断言 16 条链正常注册（cli list）
+//   1. 断言 17 条链正常注册（cli list）
 //   2. 断言引擎只含 mock 适配器（无真实 LLM 切换分支，离线可跑）
 //   3. 断言 demo.aegis-guard --mock 能在零外部依赖下完整跑通（exit 0）
+//   4. 断言 gen.project-management --mock 能在零外部依赖下完整跑通（exit 0）
 // 全程不触碰 mysql2 / 真实 LLM / 网络；CI 与本地同一份逻辑。
 
 import { spawnSync } from 'node:child_process';
@@ -30,14 +31,14 @@ console.log('ajtc-chain-engine smoke (mock-only)\n');
 // 0. 前置：CLI 存在
 check('engine/src/cli.js exists', existsSync(CLI));
 
-// 1. cli list → 16 chains
+// 1. cli list → 17 chains
 const listRes = spawnSync(process.execPath, [CLI, 'list'], {
   cwd: ROOT,
   encoding: 'utf8',
 });
 check('cli list exits 0', listRes.status === 0, JSON.stringify(listRes.error || ''));
 const chainCount = (listRes.stdout.match(/已注册的链（(\d+)）/) || [,'0'])[1];
-check('16 chains registered', chainCount === '16', `(got ${chainCount})`);
+check('17 chains registered', chainCount === '17', `(got ${chainCount})`);
 
 // 2. 仅 mock 适配器（无真实 LLM 切换分支）
 const adaptersDir = join(ROOT, 'engine', 'src', 'adapters');
@@ -60,6 +61,20 @@ check(
   'demo.aegis-guard --mock exits 0',
   runRes.status === 0,
   (runRes.stderr || '').slice(0, 200)
+);
+
+// 4. gen.project-management --mock 完整跑通（含真实磁盘扫描 + 现状盘点 + 执行治理闭环）
+const pmRes = spawnSync(
+  process.execPath,
+  [CLI, 'run', 'gen.project-management', '--mock',
+   '--goal', '盘点当前工作区项目现状并给出下一步计划',
+   '--path', ROOT],
+  { cwd: ROOT, encoding: 'utf8' }
+);
+check(
+  'gen.project-management --mock exits 0',
+  pmRes.status === 0,
+  (pmRes.stderr || '').slice(0, 400)
 );
 
 console.log(
