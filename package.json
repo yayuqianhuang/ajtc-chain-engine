@@ -1,0 +1,48 @@
+{
+  "name": "ajtc-chain-engine",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "DeepSeek Harness (dsh) 插件：把 AJTC 自动化触发链系统（引擎 + 链 + 可配置记忆后端）接入 dsh，提供 run_chain / list_chains / recall_memory 工具，默认离线 mock（零外部依赖），记忆后端可选 TencentDB Agent-Memory 或本地文件。",
+  "license": "MIT",
+  "keywords": ["dsh", "deepseek-harness", "dsh-plugin", "ajtc", "trigger-chain", "agent", "workflow"],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yayuqianhuang/ajtc-chain-engine.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "test": "node scripts/smoke.mjs"
+  },
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "cordis.patch.yml",
+    "engine",
+    "memory",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "dsh": ">=0.1.0-rc.7 <0.3.0",
+    "node": ">=22.19"
+  },
+  "dsh": {
+    "manifestVersion": 1,
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web"
+    }
+  },
+  "optionalDependencies": {
+    "mysql2": "^3.0.0"
+  }
+}

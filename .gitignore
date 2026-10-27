@@ -1,0 +1,6 @@
+node_modules/
+.runtime/
+.shadow-test/
+run-shadow/
+*.log
+.DS_Store
