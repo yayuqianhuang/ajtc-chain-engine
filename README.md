@@ -1,6 +1,8 @@
 # ajtc-chain-engine
 
 > DeepSeek Harness（**dsh**）插件 · 把 **AJTC 自动化触发链系统**（引擎 + 链 + 记忆）直接装进 dsh，支持通过 **dsh 插件市场** 一键安装。
+>
+> **🎯 定位**：面向 Agent 的**执行层治理**插件——以 `iron-laws`（硬规则）/ `deletionGuard`（删除·不可逆操作护栏）/ `verificationGate`（声称完成前须有证据）保证「AI 诚实 + 不破坏持久状态」；与 `dsh-gov`（企业级权限 / 成本治理）**互补而非竞争**。
 
 [![dsh-plugin](https://img.shields.io/badge/dsh--plugin-ready-4D6BFE)](https://github.com/deepseek-ai/deepseek-harness)
 [![License: MIT](https://img.shields.io/badge/license-MIT-2EA44F)](LICENSE)

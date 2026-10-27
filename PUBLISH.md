@@ -94,9 +94,12 @@ gh repo edit yayuqianhuang/ajtc-chain-engine --add-topic dsh-plugin
 gh repo edit yayuqianhuang/ajtc-chain-engine --add-topic deepseek-harness
 gh repo edit yayuqianhuang/ajtc-chain-engine --add-topic trigger-chain
 gh repo edit yayuqianhuang/ajtc-chain-engine --add-topic agent
+# 治理赛道定位（提升 governance 方向检索命中，与 dsh-gov 互补）
+gh repo edit yayuqianhuang/ajtc-chain-engine --add-topic agent-government
+gh repo edit yayuqianhuang/ajtc-chain-engine --add-topic ai-governance
 ```
 
-> 只有 **`dsh-plugin`** 是市场强制识别标签；其余为辅助检索。
+> 只有 **`dsh-plugin`** 是市场强制识别标签（缺它市场不扫描）；`agent-government` / `ai-governance` 等用于治理赛道检索，与 `dsh-gov`（企业级权限/成本治理）互补而非竞争。
 
 ---
 
