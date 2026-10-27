@@ -18,6 +18,11 @@ import { fileURLToPath } from 'node:url'
 
 export const name = 'ajtc-chain-engine'
 
+// Cordis 服务注入声明：本插件通过 ctx.tools 注册三个工具；systemPrompt 为可选服务
+// （dsh 不同版本可能未提供），声明后即使不存在也能安全访问（返回 undefined，由下方
+// 守卫短路跳过），避免 Cordis 报 "cannot get property 'tools' without inject"。
+export const inject = ['tools', 'systemPrompt']
+
 const HERE = dirname(fileURLToPath(import.meta.url))
 const CLI = join(HERE, 'engine', 'src', 'cli.js')
 const ENGINE_DIR = join(HERE, 'engine')
